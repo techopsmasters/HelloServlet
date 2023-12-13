@@ -1,71 +1,29 @@
 pipeline {
-    agent any 
-    tools { 
-        maven 'Maven' 
-      
-    }
-stages { 
-     
- stage('Preparation') { 
-     steps {
-// for display purposes
-
-      // Get some code from a GitHub repository
-
-      git 'https://github.com/raknas999/hello-world-servlet.git'
-
-      // Get the Maven tool.
-     
- // ** NOTE: This 'M3' Maven tool must be configured
- 
-     // **       in the global configuration.   
-     }
-   }
-
-   stage('Build') {
-       steps {
-       // Run the maven build
-
-      //if (isUnix()) {
-         sh 'mvn -Dmaven.test.failure.ignore=true install'
-      //} 
-      //else {
-      //   bat(/"${mvnHome}\bin\mvn" -Dmaven.test.failure.ignore clean package/)
-       }
-//}
-   }
- 
-  stage('Results') {
-      steps {
-      junit '**/target/surefire-reports/TEST-*.xml'
-      archiveArtifacts 'target/*.war'
-      }
- }
- stage('Sonarqube') {
-    environment {
-        scannerHome = tool 'sonarqube'
-    }
-    steps {
-        withSonarQubeEnv('sonarqube') {
-            sh "${scannerHome}/bin/sonar-scanner"
+    agent any
+    tools {
+        maven "Maven_Home"
+         }
+    stages {
+        stage('Checkout') {
+            steps{
+			git branch: 'main', credentialsId: 'git_credentials', url: 'https://github.com/shashikanth-t/HelloServlet.git'
+                echo "Checkout Success"
+            }
         }
-  //      timeout(time: 10, unit: 'MINUTES') {
- //           waitForQualityGate abortPipeline: true
-  //      }
+        stage('MavenBuild') {
+            steps{
+			sh'mvn clean install'
+                echo "Build Success"
+            }
+        }
+        stage('Deploy') {
+            steps{
+		sshagent(['deploy_user']) {
+		
+		sh "scp -o StrictHostKeyChecking=no /var/lib/jenkins/workspace/CICDJOB-1/target/helloworld.war ec2-user@44.210.130.93:/opt/apache-tomcat-9.0.84/webapps"
+			echo "Deploy Success"
+			}	
+            }
+        }
     }
-}
-     stage('Artifact upload') {
-      steps {
-     nexusPublisher nexusInstanceId: '1234', nexusRepositoryId: 'releases', packages: [[$class: 'MavenPackage', mavenAssetList: [[classifier: '', extension: '', filePath: 'target/helloworld.war']], mavenCoordinate: [artifactId: 'hello-world-servlet-example', groupId: 'com.geekcap.vmturbo', packaging: 'war', version: '$BUILD_NUMBER']]]
-      }
- }
-}
-post {
-        success {
-            mail to:"raknas000@gmail.com", subject:"SUCCESS: ${currentBuild.fullDisplayName}", body: "Build success"
-        }
-        failure {
-            mail to:"raknas000@gmail.com", subject:"FAILURE: ${currentBuild.fullDisplayName}", body: "Build failed"
-        }
-    }       
 }
