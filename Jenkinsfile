@@ -1,28 +1,28 @@
 pipeline {
     agent any
-    tools {
-        maven "Maven_Home"
-         }
+       tools {
+        maven "maven"
+    }
     stages {
-        stage('Checkout') {
-            steps{
-			git branch: 'main', credentialsId: 'git_credentials', url: 'https://github.com/shashikanth-t/HelloServlet.git'
-                echo "Checkout Success"
+        stage('Code Checkout') {
+            steps {
+            git branch: 'main', credentialsId: 'git_credentials', url: 'https://github.com/shashikanth-t/HelloServlet.git'
+            
+                echo 'Code checkout done sucessfully.'
             }
-        }
-        stage('MavenBuild') {
-            steps{
-			sh'mvn clean install'
-                echo "Build Success"
+			}
+            stage('Code Build') {
+            steps {
+            sh 'mvn clean package'
+            echo 'Code Build done sucessfully.'
             }
-        }
-        stage('Deploy') {
-            steps{
-		sshagent(['deploy_user']) {
-		
-		sh "scp -o StrictHostKeyChecking=no /var/lib/jenkins/workspace/CICDJOB-1/target/helloworld.war ec2-user@44.210.130.93:/opt/apache-tomcat-9.0.84/webapps"
-			echo "Deploy Success"
-			}	
+            }
+        stage('CodeDeploy') {
+        steps {
+           sshagent(['deploy_user']) {
+               
+               sh "scp -o StrictHostKeyChecking=no /var/lib/jenkins/workspace/Job-5/target/helloworld.war  ec2-user@3.16.216.210:/opt/apache-tomcat-9.0.85/webapps"
+                            }         
             }
         }
     }
